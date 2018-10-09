@@ -1,3 +1,3 @@
-module Usdt
-  VERSION = "0.1.0"
+module USDT
+    VERSION = "0.1.0"
 end

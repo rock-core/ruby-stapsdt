@@ -1,0 +1,3 @@
+[submodule "ext/libstapsdt"]
+	path = ext/libstapsdt
+	url = https://github.com/sthima/libstapsdt
