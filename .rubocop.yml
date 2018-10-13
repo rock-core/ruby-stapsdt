@@ -1,0 +1,8 @@
+Style/StringLiterals:
+    EnforcedStyle: double_quotes
+
+Layout/IndentationWidth:
+    Width: 4
+
+Metrics/BlockLength:
+    Exclude: test/**/*_test.rb
