@@ -1,0 +1,16 @@
+#! /usr/bin/env ruby
+
+require 'usdt'
+STDOUT.sync = true
+
+provider = USDT::Provider.new("test")
+probe = provider.add_probe("testProbe", String)
+provider.load
+
+puts 'ready'
+
+i = 0
+loop do
+    probe.fire(ARGV[0])
+    i += 1
+end

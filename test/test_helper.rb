@@ -18,7 +18,7 @@ module Helpers
         w.close
         r.each_line { |line| break if line =~ /ready/ }
         reader_thread = Thread.new { r.read }
-        trace_output = IO.popen(['sudo', '/usr/share/bcc/tools/trace',
+        trace_output = IO.popen(['pkexec', '/usr/share/bcc/tools/trace',
             '-p', pid.to_s, '-M', '10', "u::testProbe #{trace}"]) do |io|
             io.read
         end

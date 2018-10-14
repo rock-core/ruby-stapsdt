@@ -11,6 +11,7 @@ typedef struct Provider
 
 typedef struct Probe
 {
+    VALUE input_args[MAX_ARGUMENTS];
     SDTProbe_t* probe;
 } Probe_t;
 
@@ -63,6 +64,7 @@ VALUE provider_unload(VALUE self)
 
 VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
 {
+    VALUE input_args[MAX_ARGUMENTS];
     int args[MAX_ARGUMENTS];
     if (argc < 1)
         rb_raise(rb_eArgError, "expected at least one argument");
@@ -71,7 +73,14 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
             "libstapstd only supports up to %i arguments", MAX_ARGUMENTS);
 
     for (int i = 0; i < argc - 1; ++i)
-        args[i] = NUM2INT(argv[i + 1]);
+    {
+        VALUE arg_type = argv[i + 1];
+        input_args[i] = arg_type;
+        if (arg_type == rb_cString || arg_type == rb_cFloat || arg_type == rb_cInteger)
+            args[i] = uint64;
+        else
+            args[i] = NUM2INT(arg_type);
+    }
 
     Provider_t* wrap;
     Data_Get_Struct(self, Provider_t, wrap);
@@ -105,6 +114,7 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
         rb_raise(rb_eArgError, "failed to create probe");
 
     Probe_t* probe_wrap = ALLOC(Probe_t);
+    memcpy(probe_wrap->input_args, input_args, sizeof(VALUE)*(argc - 1));
     probe_wrap->probe = probe;
     /* NOTE: probes cannot be deallocated. They're freed when the provider is */
     return rb_data_object_wrap(rb_mProbe, probe_wrap, NULL, NULL);
@@ -112,7 +122,15 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
 
 VALUE probe_fire(int argc, VALUE* argv, VALUE self)
 {
+
     uint64_t args[MAX_ARGUMENTS];
+    VALUE block_args[MAX_ARGUMENTS];
+    VALUE* in_args;
+
+    Probe_t* wrap;
+    Data_Get_Struct(self, Probe_t, wrap);
+    int expected_argc = wrap->probe->argCount;
+
     if (rb_block_given_p()) {
         if (argc != 0)
         {
@@ -120,20 +138,37 @@ VALUE probe_fire(int argc, VALUE* argv, VALUE self)
                 "and block at the same time");
         }
 
-        VALUE block_args = rb_yield_values(0);
-        if (!NIL_P(block_args)) {
-            argc = RARRAY_LEN(block_args);
+        VALUE block_ret = rb_yield_values(0);
+        if (!NIL_P(block_ret)) {
+            argc = RARRAY_LEN(block_ret);
+            if (argc != expected_argc)
+                rb_raise(rb_eArgError, "expected %i arguments, got %i",
+                    expected_argc, argc);
+
             for (int i = 0; i < argc; ++i)
-                args[i] = NUM2ULL(rb_ary_entry(self, i));
+                block_args[i] = rb_ary_entry(self, i);
+            in_args = block_args;
         }
     }
     else {
-        for (int i = 0; i < argc; ++i)
-            args[i] = NUM2ULL(argv[i]);
+        in_args = argv;
     }
 
-    Probe_t* wrap;
-    Data_Get_Struct(self, Probe_t, wrap);
+    for (int i = 0; i < argc; ++i)
+    {
+        if (wrap->input_args[i] == rb_cString)
+        {
+            char const* s = StringValuePtr(in_args[i]);
+            args[i] = *(uint64_t*)&s;
+        }
+        else if (wrap->input_args[i] == rb_cFloat)
+        {
+            double d = NUM2DBL(in_args[i]);
+            args[i] = *(uint64_t*)&d;
+        }
+        else
+            args[i] = NUM2ULL(in_args[i]);
+    }
 
     if (argc == 0)
         probeFire(wrap->probe);

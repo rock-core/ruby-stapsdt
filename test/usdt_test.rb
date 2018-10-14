@@ -25,9 +25,9 @@ module USDT
             refute_match /fired/, output
         end
 
-        it "passes numeric arguments" do
+        it "passes numeric arguments specified with the ARG constants" do
             trace_output, output = assert_runs_traced(
-                'testProbe', 'probe_numeric_arguments',
+                'testProbe', 'probe_raw_arguments',
                 trace: "\"FIRED %d %d\" arg1, arg2")
             lines = trace_output.split("\n")
             capture = lines.map do |l|
@@ -42,6 +42,23 @@ module USDT
                 assert_equal j1, j0 + 1
             end
         end
+
+        it "passes Float arguments" do
+            trace_output, output = assert_runs_traced(
+                'testProbe', 'probe_float_argument', '0.1',
+                trace: "\"FIRED %llu\" arg1")
+            lines = trace_output.split("\n")
+            assert(m = /FIRED (\d+)$/.match(lines[1]))
+            assert_equal [0.1], [Integer(m[1])].pack("Q").unpack("D")
+        end
+
+        it "passes String arguments" do
+            trace_output, output = assert_runs_traced(
+                'testProbe', 'probe_string_argument', 'this is a test string',
+                trace: "\"FIRED %s\" arg1")
+            lines = trace_output.split("\n")
+            assert(m = /FIRED (.*)$/.match(lines[1]))
+            assert_equal "this is a test string", m[1]
+        end
     end
 end
-
