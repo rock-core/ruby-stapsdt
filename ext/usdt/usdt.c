@@ -71,7 +71,7 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
     if (argc > MAX_ARGUMENTS + 1)
         rb_raise(rb_eArgError,
             "libstapstd only supports up to %i arguments, got %i",
-                MAX_ARGUMENTS, argc);
+                MAX_ARGUMENTS, argc - 1);
 
     for (int i = 0; i < argc - 1; ++i)
     {
@@ -141,19 +141,28 @@ VALUE probe_fire(int argc, VALUE* argv, VALUE self)
                 "and block at the same time");
         }
 
+        if (!probeIsEnabled(wrap->probe)) {
+            return Qfalse;
+        }
+
         VALUE block_ret = rb_yield_values(0);
         if (!NIL_P(block_ret)) {
             argc = RARRAY_LEN(block_ret);
             if (argc != expected_argc)
-                rb_raise(rb_eArgError, "expected %i arguments, got %i",
+                rb_raise(rb_eArgError, "expected %i argument(s), got %i",
                     expected_argc, argc);
 
             for (int i = 0; i < argc; ++i)
-                block_args[i] = rb_ary_entry(self, i);
+                block_args[i] = rb_ary_entry(block_ret, i);
+
             in_args = block_args;
         }
     }
     else {
+        if (argc != expected_argc)
+            rb_raise(rb_eArgError, "expected %i argument(s), got %i",
+                expected_argc, argc);
+
         in_args = argv;
     }
 
