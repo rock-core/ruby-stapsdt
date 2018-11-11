@@ -2,33 +2,57 @@ require "test_helper"
 
 module USDT
     describe Provider do
-        it "defines a single probe without arguments" do
-            assert_runs("probe_without_arguments", "100")
+        before do
+            @provider = USDT::Provider.new("test")
         end
-        it "successfully traces a single probe without arguments" do
-            assert_runs_traced('testProbe', 'probe_without_arguments')
+
+        after do
+            @provider.unload if @provider.loaded?
         end
-        it "reports probes that are watched as enabled" do
-            _, output = assert_runs_traced('testProbe', 'probe_without_arguments')
-            assert_match /enabled/, output
-        end
-        it "returns true in #fire if the probe is enabled" do
-            _, output = assert_runs_traced('testProbe', 'probe_without_arguments')
-            assert_match /fired/, output
-        end
-        it "does not report probes that are not watched as enabled" do
-            output = assert_runs('probe_without_arguments', "100")
-            refute_match /enabled/, output
-        end
-        it "returns false in #fire if the probe is not enabled" do
-            output = assert_runs('probe_without_arguments', '100')
-            refute_match /fired/, output
+
+        describe "probe definition" do
+            before do
+                @probe = @provider.add_probe("testProbe")
+                @provider.load
+            end
+            it "returns false in #fire if the probe is not enabled" do
+                refute @probe.fire
+            end
+            it "returns the probe name" do
+                assert_equal 'testProbe', @probe.name
+            end
+            it "reports that the probe is not enabled" do
+                refute @probe.enabled?
+            end
+            it "successfully traces the probe" do
+                assert_trace(@probe) { @probe.fire }
+            end
+            it "reports a traced probe as enabled" do
+                success = false
+                assert_trace(@probe) do
+                    success ||= @probe.enabled?
+                    @probe.fire
+                end
+                assert success
+            end
+            it "returns true in #fire if the probe is enabled" do
+                success = false
+                assert_trace(@probe) do
+                    success = true if @probe.fire
+                end
+                assert success
+            end
         end
 
         it "passes numeric arguments specified with the ARG constants" do
-            trace_output, output = assert_runs_traced(
-                'testProbe', 'probe_raw_arguments',
-                trace: "\"FIRED %d %d\" arg1, arg2")
+            probe = @provider.add_probe("testProbe", USDT::ARG_UINT32, USDT::ARG_UINT64)
+            @provider.load
+            i = 0
+            trace_output, _ = assert_trace(probe, trace: "\"FIRED %d %d\" arg1, arg2") do
+                probe.fire(i + 100, i)
+                i += 1
+            end
+
             lines = trace_output.split("\n")
             capture = lines.map do |l|
                 if l =~ /FIRED (\d+) (\d+)$/
@@ -44,18 +68,26 @@ module USDT
         end
 
         it "passes Float arguments" do
-            trace_output, output = assert_runs_traced(
-                'testProbe', 'probe_float_argument', '0.1',
-                trace: "\"FIRED %llu\" arg1")
+            probe = @provider.add_probe("testProbe", Float)
+            @provider.load
+
+            trace_output, _ = assert_trace(probe, trace: "\"FIRED %llu\" arg1") do
+                probe.fire(0.1)
+            end
+
             lines = trace_output.split("\n")
             assert(m = /FIRED (\d+)$/.match(lines[1]))
             assert_equal [0.1], [Integer(m[1])].pack("Q").unpack("D")
         end
 
         it "passes String arguments" do
-            trace_output, output = assert_runs_traced(
-                'testProbe', 'probe_string_argument', 'this is a test string',
-                trace: "\"FIRED %s\" arg1")
+            probe = @provider.add_probe("testProbe", String)
+            @provider.load
+
+            trace_output, _ = assert_trace(probe, trace: "\"FIRED %s\" arg1") do
+                probe.fire('this is a test string')
+            end
+
             lines = trace_output.split("\n")
             assert(m = /FIRED (.*)$/.match(lines[1]))
             assert_equal "this is a test string", m[1]

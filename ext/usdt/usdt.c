@@ -23,7 +23,7 @@ void provider_free(Provider_t* wrap)
 
 VALUE provider_new(VALUE self, VALUE _name)
 {
-    char const* name = StringValuePtr(_name);
+    char const* name = StringValueCStr(_name);
     SDTProvider_t* provider = providerInit(name);
     if (!provider)
         rb_raise(rb_eRuntimeError, "could not create provider with name %s", name);
@@ -67,10 +67,11 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
     VALUE input_args[MAX_ARGUMENTS];
     int args[MAX_ARGUMENTS];
     if (argc < 1)
-        rb_raise(rb_eArgError, "expected at least one argument");
+        rb_raise(rb_eArgError, "expected at least 1 argument, got 0");
     if (argc > MAX_ARGUMENTS + 1)
         rb_raise(rb_eArgError,
-            "libstapstd only supports up to %i arguments", MAX_ARGUMENTS);
+            "libstapstd only supports up to %i arguments, got %i",
+                MAX_ARGUMENTS, argc);
 
     for (int i = 0; i < argc - 1; ++i)
     {
@@ -82,31 +83,33 @@ VALUE provider_add_probe(int argc, VALUE* argv, VALUE self)
             args[i] = NUM2INT(arg_type);
     }
 
+    char const* probe_name = StringValueCStr(argv[0]);
+
     Provider_t* wrap;
     Data_Get_Struct(self, Provider_t, wrap);
 
     SDTProbe_t* probe = NULL;
     if (argc == 1)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 0);
+        probe = providerAddProbe(wrap->provider, probe_name, 0);
     else if (argc == 2)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 1,
+        probe = providerAddProbe(wrap->provider, probe_name, 1,
             (ArgType_t)args[0]);
     else if (argc == 3)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 2,
+        probe = providerAddProbe(wrap->provider, probe_name, 2,
             (ArgType_t)args[0], (ArgType_t)args[1]);
     else if (argc == 4)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 3,
+        probe = providerAddProbe(wrap->provider, probe_name, 3,
             (ArgType_t)args[0], (ArgType_t)args[1], (ArgType_t)args[2]);
     else if (argc == 5)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 4,
+        probe = providerAddProbe(wrap->provider, probe_name, 4,
             (ArgType_t)args[0], (ArgType_t)args[1], (ArgType_t)args[2],
             (ArgType_t)args[3]);
     else if (argc == 6)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 5,
+        probe = providerAddProbe(wrap->provider, probe_name, 5,
             (ArgType_t)args[0], (ArgType_t)args[1], (ArgType_t)args[2],
             (ArgType_t)args[3], (ArgType_t)args[4]);
     else if (argc == 7)
-        probe = providerAddProbe(wrap->provider, StringValuePtr(argv[0]), 6,
+        probe = providerAddProbe(wrap->provider, probe_name, 6,
             (ArgType_t)args[0], (ArgType_t)args[1], (ArgType_t)args[2],
             (ArgType_t)args[3], (ArgType_t)args[4], (ArgType_t)args[5]);
 
@@ -158,7 +161,7 @@ VALUE probe_fire(int argc, VALUE* argv, VALUE self)
     {
         if (wrap->input_args[i] == rb_cString)
         {
-            char const* s = StringValuePtr(in_args[i]);
+            char const* s = StringValueCStr(in_args[i]);
             args[i] = *(uint64_t*)&s;
         }
         else if (wrap->input_args[i] == rb_cFloat)
@@ -195,6 +198,13 @@ VALUE probe_enabled_p(VALUE self)
     return probeIsEnabled(wrap->probe) ? Qtrue : Qfalse;
 }
 
+VALUE probe_name(VALUE self)
+{
+    Probe_t* wrap;
+    Data_Get_Struct(self, Probe_t, wrap);
+    return rb_str_new_cstr(wrap->probe->name);
+}
+
 void
 Init_usdt(void)
 {
@@ -208,5 +218,6 @@ Init_usdt(void)
     rb_mProbe = rb_define_class_under(rb_mUsdt, "Probe", rb_cObject);
     rb_define_method(rb_mProbe, "fire", probe_fire, -1);
     rb_define_method(rb_mProbe, "enabled?", probe_enabled_p, 0);
+    rb_define_method(rb_mProbe, "name", probe_name, 0);
 }
 
