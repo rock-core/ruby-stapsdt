@@ -1,9 +1,9 @@
 require "test_helper"
 
-module USDT
+module StapSDT
     describe Provider do
         before do
-            @provider = USDT::Provider.new("test")
+            @provider = StapSDT::Provider.new("test")
         end
 
         after do
@@ -44,6 +44,7 @@ module USDT
             end
 
             it "raises if attempting to create a probe with more than 6 arguments" do
+                @provider.unload
                 e = assert_raises(ArgumentError) do
                     @provider.add_probe("invalidProbe", *([Integer] * 10))
                 end
@@ -54,7 +55,7 @@ module USDT
 
         describe "arguments passed directly" do
             it "passes numeric arguments specified with the ARG constants" do
-                probe = @provider.add_probe("testProbe", USDT::ARG_UINT32, USDT::ARG_UINT64)
+                probe = @provider.add_probe("testProbe", StapSDT::ARG_UINT32, StapSDT::ARG_UINT64)
                 @provider.load
                 i = 0
                 trace_output, _ = assert_trace(probe, trace: "\"FIRED %d %d\" arg1, arg2") do

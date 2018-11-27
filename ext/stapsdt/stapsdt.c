@@ -1,8 +1,8 @@
-#include "usdt.h"
+#include "stapsdt.h"
 
 VALUE rb_mProvider;
 VALUE rb_mProbe;
-VALUE rb_mUsdt;
+VALUE rb_mStapSDT;
 
 typedef struct Provider
 {
@@ -215,16 +215,16 @@ VALUE probe_name(VALUE self)
 }
 
 void
-Init_usdt(void)
+Init_stapsdt(void)
 {
-    rb_mUsdt = rb_define_module("USDT");
-    rb_mProvider = rb_define_class_under(rb_mUsdt, "Provider", rb_cObject);
+    rb_mStapSDT = rb_define_module("StapSDT");
+    rb_mProvider = rb_define_class_under(rb_mStapSDT, "Provider", rb_cObject);
     rb_define_singleton_method(rb_mProvider, "new", provider_new, 1);
     rb_define_method(rb_mProvider, "add_probe_c", provider_add_probe, -1);
     rb_define_method(rb_mProvider, "load_c", provider_load, 0);
     rb_define_method(rb_mProvider, "unload_c", provider_unload, 0);
 
-    rb_mProbe = rb_define_class_under(rb_mUsdt, "Probe", rb_cObject);
+    rb_mProbe = rb_define_class_under(rb_mStapSDT, "Probe", rb_cObject);
     rb_define_method(rb_mProbe, "fire", probe_fire, -1);
     rb_define_method(rb_mProbe, "enabled?", probe_enabled_p, 0);
     rb_define_method(rb_mProbe, "name", probe_name, 0);

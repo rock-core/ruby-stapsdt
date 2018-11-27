@@ -1,4 +1,4 @@
-module USDT
+module StapSDT
     # Collection of probes that can be activated and deactivated
     #
     # Providers are the entry point for probe definition
@@ -48,7 +48,7 @@ module USDT
         #
         # @param [String] probe_name the name of the probe
         # @param [Array] arg_types the type of probe arguments.
-        #   It is either one of the ARG_ constants defined within {USDT},
+        #   It is either one of the ARG_ constants defined within {StapSDT},
         #   or one of the Integer, Float and String classes.
         # @return [Probe]
         # @raise [StateError] if the provider was already loaded

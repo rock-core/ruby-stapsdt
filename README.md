@@ -1,16 +1,22 @@
-# USDT
+# StapSDT
 
-Runtime definition of USDT (Dtrace) probes within Ruby programs
+Runtime definition of StapSDT (Dtrace) probes within Ruby programs
 
-This gem allows one to define USDT probes on Linux, and then use the USDT tooling
+This gem allows one to define StapSDT probes on Linux, and then use the StapSDT tooling
 to list and inspect them (mainly the bcc suite of tools)
 
 ## Installation
 
+This gem requires that libelf is installed on the system. On Ubuntu systems, do
+
+~~~
+sudo apt-get install libelf-dev
+~~~
+
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'usdt'
+gem 'stapsdt'
 ```
 
 And then execute:
@@ -19,18 +25,18 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install usdt
+    $ gem install stapsdt
 
 ## Usage
 
 An example should be worth a 1000 words. Let's create `example.rb` with:
 
 ```ruby
-require 'usdt'
+require 'stapsdt'
 
 puts "PID: #{Process.pid}"
 
-provider = USDT::Provider.new('example')
+provider = StapSDT::Provider.new('example')
 
 probe = provider.add_probe("test", String, Integer)
 provider.load
@@ -92,7 +98,7 @@ push git commits and tags, and push the `.gem` file to
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at
-https://github.com/rock-core/ruby-usdt. This project is intended to be a safe,
+https://github.com/rock-core/ruby-stapsdt. This project is intended to be a safe,
 welcoming space for collaboration, and contributors are expected to adhere to
 the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 

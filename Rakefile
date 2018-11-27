@@ -11,8 +11,8 @@ require "rake/extensiontask"
 
 task :build => :compile
 
-Rake::ExtensionTask.new("usdt") do |ext|
-  ext.lib_dir = "lib/usdt"
+Rake::ExtensionTask.new("stapsdt") do |ext|
+  ext.lib_dir = "lib/stapsdt"
 end
 
 task :default => [:clobber, :compile, :test]

@@ -1,4 +1,4 @@
-module USDT
+module StapSDT
     # A single USDT probe
     #
     # Probe objects are exclusively created with {Provider#add_probe}

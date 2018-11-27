@@ -16,4 +16,4 @@ unless find_library('stapsdt', 'probeIsEnabled')
     abort "cannot link to libstapsdt.a"
 end
 
-create_makefile("usdt/usdt")
+create_makefile("stapsdt/stapsdt")
